@@ -55,6 +55,24 @@ module.exports = {
     image.link = `${HOST_URL}/${image.path}`
     image = {...['link', 'height', 'width'].reduce((mem, key) => ({ ...mem, [key]: image[key] }), {})}
     return res.status(200).json(image)
+  },
+
+  listImages: async (req, res, next) => {
+    // Check if user is authorized
+    let user = authorize(req, res, next)
+    if (!user) return res.status(401).send('Missing Authorization Header or authorization Header does not include a username')
+
+    // Simple pagination
+    let { skip } = req.body
+    if (!skip) skip = 0
+
+    let result
+    try {
+      result = await db.cfind({ user }, { filename: 1, width: 1, height: 1, _id: 1 }).skip(skip).limit(20).exec()
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+    return res.status(200).json(result)
   }
 
 }

@@ -94,6 +94,34 @@ describe('Images ', () => {
     })
   })
 
+  describe('list: ', () => {
+
+    it('/list POST - without authorization returns error', async () => {
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/list`)
+
+      res.should.have.status(401)
+      res.should.have.property('error')
+      res.error.should.have.property('text')
+      res.error.should.have.property('text').eql('Missing Authorization Header or authorization Header does not include a username')
+    })
+
+    it('/list - POST returns list of images resized by the user', async () => {
+      await chai.request(server).post(`${BASE_URL}/resize`).set('Authorization', `Bearer ${USER_JWT}`).
+        field('height', 400).field('width', 600).attach('image', TEST_IMAGE, 'test.jpg')
+
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/list`).
+        set('Authorization', `Bearer ${USER_JWT}`)
+
+      res.should.have.status(200)
+      expect(res.body).to.be.an('array')
+      expect(res.body.length).to.equal(2)
+    })
+  })
+
   after(async () => {
     rimraf(IMAGE_FOLDER, () => null)
     rimraf(RESIZED_FOLDER, () => null)

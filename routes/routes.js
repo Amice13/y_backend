@@ -10,5 +10,8 @@ module.exports = (app) => {
   app.get(BASE_URL + '/', imagesController.testAPI),
 
   // Upload and resize the image
-  app.post(BASE_URL + '/resize', uploadImage, imagesController.resizeImage)
+  app.post(BASE_URL + '/resize', uploadImage, imagesController.resizeImage),
+
+  // List resized images
+  app.post(BASE_URL + '/list', imagesController.listImages)
 }
