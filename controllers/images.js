@@ -73,8 +73,73 @@ module.exports = {
       return res.status(500).send(error)
     }
     return res.status(200).json(result)
-  }
+  },
 
+  resizeById: async (req, res, next) => {
+    // Check if user is authorized
+    let user = authorize(req, res, next)
+    if (!user) return res.status(401).send('Missing Authorization Header or authorization Header does not include a username')
+
+    // Check if id is provided
+    let { width, height, id } = req.body
+    if (!id) return res.status(422).send('Image id is not provided')
+    // Check if we have sizes
+    if (!width) return res.status(422).send('New image width has not been set')
+    if (!height) return res.status(422).send('New image height has not been set')
+    width = parseInt(width)
+    height = parseInt(height)
+    if (isNaN(width)) return res.status(422).send('New image width is not a number')
+    if (isNaN(height)) return res.status(422).send('New image height is not a number')
+    let createdAt = new Date()
+
+    // Get info about old image
+    let oldImage
+    try {
+      oldImage = await db.findOne({ _id: id })
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+
+    if (!oldImage) return res.status(404).send(`Image with id "${id}" is not found`)
+
+    // Check if image with sizes exists
+    let resizedImage
+    try {
+      resizedImage = await db.cfindOne({ user, path: oldImage.path, width, height }, { path: 1, width: 1, height: 1 }).exec()
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+
+    if (resizedImage) {
+      resizedImage.link = `${HOST_URL}/${resizedImage.path}`
+      delete resizedImage.path
+      return res.status(200).json(resizedImage)
+    }
+
+    // Resize image
+    let resized = await resizeImage(oldImage.path, width, height, user, oldImage.originalname)
+
+    // Save information about image to database
+    let image = {
+      createdAt,
+      user,
+      originalname: oldImage.originalname,
+      filename: resized.filename,
+      width: resized.width,
+      height: resized.height,
+      path: resized.path }
+
+    try {
+      await db.insert(image)
+    } catch (error) {
+      return res.status(500).send(error)
+    }
+
+    // Return image link to user
+    image.link = `${HOST_URL}/${image.path}`
+    image = {...['link', 'height', 'width'].reduce((mem, key) => ({ ...mem, [key]: image[key] }), {})}
+    return res.status(200).json(image)
+  }
 }
 
 const authorize = (req, res, next) => {

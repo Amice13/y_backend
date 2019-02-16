@@ -122,6 +122,76 @@ describe('Images ', () => {
     })
   })
 
+  describe('resize old: ', () => {
+
+    it('/resize-old - POST - without authorization returns error', async () => {
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/list`)
+
+      res.should.have.status(401)
+      res.should.have.property('error')
+      res.error.should.have.property('text')
+      res.error.should.have.property('text').eql('Missing Authorization Header or authorization Header does not include a username')
+    })
+
+    it('/resize-old - POST - without id returns error', async () => {
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/resize-old`).
+        set('Authorization', `Bearer ${USER_JWT}`)
+
+      res.should.have.status(422)
+      res.should.have.property('error')
+      res.error.should.have.property('text')
+      res.error.should.have.property('text').eql('Image id is not provided')
+    })
+
+    it('/resize-old - POST image without height returns error', async () => {
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/resize-old`).
+        set('Authorization', `Bearer ${USER_JWT}`).
+        send({ width: 200, id: 123 })
+
+      res.should.have.status(422)
+      res.should.have.property('error')
+      res.error.should.have.property('text')
+      res.error.should.have.property('text').eql('New image height has not been set')
+    })
+
+
+    it('/resize-old - POST - with absent id returns error', async () => {
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/resize-old`).
+        set('Authorization', `Bearer ${USER_JWT}`).
+        send({ width: 150, height: 150, id: 123 })
+
+      res.should.have.status(404)
+      res.should.have.property('error')
+      res.error.should.have.property('text')
+      res.error.should.have.property('text').eql(`Image with id "123" is not found`)
+    })
+
+    it('/resize-old - POST returns list of images resized by the user', async () => {
+
+      let list = await chai.
+        request(server).
+        post(`${BASE_URL}/list`).
+        set('Authorization', `Bearer ${USER_JWT}`)
+
+      let id = list.body[0]._id
+      let res = await chai.
+        request(server).
+        post(`${BASE_URL}/resize-old`).
+        set('Authorization', `Bearer ${USER_JWT}`).
+        send({ width: 150, height: 150, id })
+
+      res.should.have.status(200)
+    })
+  })
+
   after(async () => {
     rimraf(IMAGE_FOLDER, () => null)
     rimraf(RESIZED_FOLDER, () => null)

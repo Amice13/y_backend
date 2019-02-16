@@ -13,5 +13,8 @@ module.exports = (app) => {
   app.post(BASE_URL + '/resize', uploadImage, imagesController.resizeImage),
 
   // List resized images
-  app.post(BASE_URL + '/list', imagesController.listImages)
+  app.post(BASE_URL + '/list', imagesController.listImages),
+
+  // Resize old image
+  app.post(BASE_URL + '/resize-old', imagesController.resizeById)
 }
