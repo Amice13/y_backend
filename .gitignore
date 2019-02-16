@@ -59,3 +59,10 @@ typings/
 
 # next.js build output
 .next
+
+# Database
+*.db
+test-image/
+test-resized/
+user-image/
+user-resized/
